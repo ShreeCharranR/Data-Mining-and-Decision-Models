@@ -16,12 +16,18 @@ from scipy.optimize import linprog
 """
 Variables:
     L - flight Legs
-    I -Itineraries
+    I - Itineraries
     C - capacity of the flight leg
     D - demand for the itinerary
     X - portion of the demand to be considered for the itinery without violating population
     
+    I - varies from 1 to 7949
+    L - varies from 1 to 53
+    
+    
 Objective Function:
+    
+    Z -  Fare data transpose * X 
     
 """
 
