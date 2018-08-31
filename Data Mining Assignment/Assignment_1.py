@@ -102,6 +102,10 @@ z =  7949 x 1
 
 b = (7949 + 52) x 7949
 
+The it_flight dictionary will have flight as key and the itinerary as the value
+The matrix should have 1 in the place for every itinerary else 0 adding sparsness
+in the exisiting B matrix
+
 """
 
 Z = fare_data.iloc[:,1].values#.reshape(len(fare_data.iloc[:,1].values),1)
@@ -112,13 +116,14 @@ Z.shape
 
 it_flight_dict = {}
 
-for i in it_leg_data.Itinerary.unique():
-    it_flight_dict[i] = it_leg_data[it_leg_data['Itinerary']==i]['Flight'].tolist()
+for i in it_leg_data.Flight.unique():
+    it_flight_dict[i] = it_leg_data[it_leg_data['Flight']==i]['Itinerary'].tolist()
 
 
 A = np.diag(np.array([1 for i in range(fare_data.shape[0])]))
 B = demand_data.iloc[:,1].values.reshape(len(demand_data.iloc[:,1].values),1)
-    
+
+
 res = linprog(Z, A_ub=A, b_ub=B,options={"disp": True})
 
 
