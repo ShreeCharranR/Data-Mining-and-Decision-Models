@@ -10,7 +10,6 @@ Created on Thu Aug  9 21:47:32 2018
 import numpy as np
 import pandas as pd
 from scipy.optimize import linprog
-import matplotlib.pyplot as plt
 
 "#############################################################################"
 
@@ -38,7 +37,6 @@ def read_data(filename):
             words = line.split()
             array_data.append(words)
     array_data = pd.DataFrame(array_data)
-    array_data.columns = ["ID","Qty"]
     return(array_data)
 
 capacity_data = read_data("capacity.txt")
@@ -46,9 +44,15 @@ demand_data = read_data("demand.txt")
 fare_data = read_data("fare.txt")
 it_leg_data = read_data("it_leg.txt")
 
-capacity_data.Qty = capacity_data.Qty.astype('int64')
-fare_data.Qty = fare_data.Qty.astype("float64")
-demand_data.Qty = demand_data.Qty.astype("float64")
+#Renaming column name for clarity
+capacity_data.columns = np.array(['Flight','Capacity'])
+demand_data.columns =np.array(['Itinerary','Demand'])
+fare_data.columns = np.array(['Itinerary','Fare'])
+it_leg_data.columns = np.array(['Itinerary','Flight'])
+
+capacity_data.Capacity = capacity_data.Capacity.astype('int64')
+fare_data.Fare = fare_data.Fare.astype("float64")
+demand_data.Demand = demand_data.Demand.astype("float64")
 
 """
 it_leg_data.describe()
@@ -83,22 +87,38 @@ Out[43]:
 3  23**I******20020920  0.0000
 4  23CHIZRHNRT20020920  0.0000
 
-Total of 53 itinerary
-Total of 7494 itinerary
+Total of 53 flights
+Total of 7494 itinerary combinations
 
+len(it_leg_data.ID.unique())
+Out[17]: 7949
+
+len(it_leg_data.Qty.unique())
+Out[18]: 53
+
+we are optimizing for each itinery hence the formulation take following structure
+
+z =  7949 x 1
+
+b = (7949 + 52) x 7949
 
 """
 
-Z = np.array()
+Z = fare_data.iloc[:,1].values#.reshape(len(fare_data.iloc[:,1].values),1)
+Z.shape
+
 
 """Constraints - Demand and Capacity """
 
-C = np.array([demand_data.iloc[:,1].values,demand_data.iloc[:,1].values])
-D = 
+it_flight_dict = {}
+
+for i in it_leg_data.Itinerary.unique():
+    it_flight_dict[i] = it_leg_data[it_leg_data['Itinerary']==i]['Flight'].tolist()
 
 
-
-
-
+A = np.diag(np.array([1 for i in range(fare_data.shape[0])]))
+B = demand_data.iloc[:,1].values.reshape(len(demand_data.iloc[:,1].values),1)
+    
+res = linprog(Z, A_ub=A, b_ub=B,options={"disp": True})
 
 
