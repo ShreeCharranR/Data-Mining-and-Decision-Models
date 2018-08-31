@@ -50,11 +50,15 @@ demand_data.columns =np.array(['Itinerary','Demand'])
 fare_data.columns = np.array(['Itinerary','Fare'])
 it_leg_data.columns = np.array(['Itinerary','Flight'])
 
+#changing the data type
 capacity_data.Capacity = capacity_data.Capacity.astype('int64')
 fare_data.Fare = fare_data.Fare.astype("float64")
 demand_data.Demand = demand_data.Demand.astype("float64")
 
+
 """
+Information about the data
+
 it_leg_data.describe()
 
                              ID                     Qty
@@ -96,11 +100,11 @@ Out[17]: 7949
 len(it_leg_data.Qty.unique())
 Out[18]: 53
 
-we are optimizing for each itinery hence the formulation take following structure
+we are optimizing for each itinerary hence the formulation take following structure
 
 z =  7949 x 1
 
-b = (7949 + 52) x 7949
+b = (7949 + 53) x 7949
 
 The it_flight dictionary will have flight as key and the itinerary as the value
 The matrix should have 1 in the place for every itinerary else 0 adding sparsness
@@ -112,8 +116,15 @@ Z = fare_data.iloc[:,1].values#.reshape(len(fare_data.iloc[:,1].values),1)
 Z.shape
 
 
-"""Constraints - Demand and Capacity """
+"""Constraints - Demand and Capacity 
 
+demand_data.iloc[:,0].values == fare_data.iloc[:,0].values
+Out[30]: array([ True,  True,  True, ...,  True,  True,  True])
+
+demand and fare data are in correct array
+
+"""
+#Dictionary for flight used in itenerary - 53 rows
 it_flight_dict = {}
 
 for i in it_leg_data.Flight.unique():
@@ -124,6 +135,17 @@ A = np.diag(np.array([1 for i in range(fare_data.shape[0])]))
 B = demand_data.iloc[:,1].values.reshape(len(demand_data.iloc[:,1].values),1)
 
 
+for k,v in it_flight_dict.items():
+    temp_array= np.zeros(demand_data.shape[0])
+    for i in v:
+        temp_array = np.logical_or(temp_array,np.array(demand_data.iloc[:,0].values == i))
+    temp_array = temp_array.astype(int)
+    A = np.vstack([A,temp_array])
+    #Appending the capacity data for each flight to B matrix [num] -  , 53 times iteration
+    #directly adding the rows to B to avoid creation of new variable
+    B = np.vstack([B, int(capacity_data[capacity_data.Flight == k]['Capacity'])])
+
+#Applying optimization using linear programming
 res = linprog(Z, A_ub=A, b_ub=B,options={"disp": True})
 
 
