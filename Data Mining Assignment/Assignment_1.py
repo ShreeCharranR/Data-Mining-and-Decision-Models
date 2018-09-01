@@ -100,10 +100,10 @@ Out[43]:
 Total of 53 flights
 Total of 7494 itinerary combinations
 
-len(it_leg_data.ID.unique())
+len(it_leg_data.Itinerary.unique())
 Out[17]: 7949
 
-len(it_leg_data.Qty.unique())
+len(it_leg_data.Flight.unique())
 Out[18]: 53
 
 we are optimizing for each itinerary hence the formulation take following structure
@@ -136,6 +136,11 @@ it_flight_dict = {}
 for i in it_leg_data.Flight.unique():
     it_flight_dict[i] = it_leg_data[it_leg_data['Flight']==i]['Itinerary'].tolist()
 
+#Dictionary for itinerary to flight mappings reverse
+flight_it_dict = {}
+
+for i in it_leg_data.Itinerary.unique():
+    flight_it_dict[i] = it_leg_data[it_leg_data['Itinerary']==i]['Flight'].tolist()
 
 A = np.diag(np.array([1 for i in range(fare_data.shape[0])]))
 B = demand_data.iloc[:,1].values.reshape(len(demand_data.iloc[:,1].values),1)
