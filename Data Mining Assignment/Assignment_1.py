@@ -11,9 +11,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import linprog
 
-"#############################################################################"
-
-"""
+"""#############################################################################
 Variables:
     L - flight Legs
     I - Itineraries
@@ -29,9 +27,7 @@ Objective Function:
     
     Z -  Fare data transpose * X 
     
-"""
-
-"""##########################################################################"""
+##########################################################################"""
 
 
 def read_data(filename):
@@ -142,6 +138,7 @@ flight_it_dict = {}
 for i in it_leg_data.Itinerary.unique():
     flight_it_dict[i] = it_leg_data[it_leg_data['Itinerary']==i]['Flight'].tolist()
 
+# Constraints
 A = np.diag(np.array([1 for i in range(fare_data.shape[0])]))
 B = demand_data.iloc[:,1].values.reshape(len(demand_data.iloc[:,1].values),1)
 
