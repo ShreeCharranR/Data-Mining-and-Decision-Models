@@ -153,7 +153,11 @@ for k,v in it_flight_dict.items():
     #directly adding the rows to B to avoid creation of new variable
     B = np.vstack([B, int(capacity_data[capacity_data.Flight == k]['Capacity'])])
 
+B = B.ravel()
+
 #Applying optimization using linear programming
-res = linprog(c = Z, A_ub=A, b_ub=B,options={"disp": True})
+res = linprog(c = Z, A_ub=A, b_ub=B, method='interior-point',options={"disp": True})
+#,"maxiter" : 5
 
-
+import matplotlib.pyplot as plt
+plt.hist(np.array(1+res.x),bins=20)
