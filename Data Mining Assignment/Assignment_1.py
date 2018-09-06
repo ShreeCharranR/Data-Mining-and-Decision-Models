@@ -154,6 +154,6 @@ for k,v in it_flight_dict.items():
     B = np.vstack([B, int(capacity_data[capacity_data.Flight == k]['Capacity'])])
 
 #Applying optimization using linear programming
-res = linprog(Z, A_ub=A, b_ub=B,options={"disp": True})
+res = linprog(c = Z, A_ub=A, b_ub=B,options={"disp": True})
 
 
