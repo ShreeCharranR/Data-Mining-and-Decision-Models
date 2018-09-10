@@ -57,6 +57,11 @@ capacity_data.Capacity = capacity_data.Capacity.astype('int64')
 fare_data.Fare = fare_data.Fare.astype("float64")
 demand_data.Demand = demand_data.Demand.astype("float64")
 
+#saving files for future purpose
+capacity_data.to_csv("data_mining_capacity.csv")
+demand_data.to_csv("data_mining_demand.csv")
+fare_data.to_csv("data_mining_fare.csv")
+it_leg_data.to_csv("data_mining_mapping.csv")
 
 """
 Information about the data
@@ -115,6 +120,7 @@ in the exisiting B matrix
 """
 
 Z = fare_data.iloc[:,1].values#.reshape(len(fare_data.iloc[:,1].values),1)
+Z =-Z
 Z.shape
 
 
@@ -158,6 +164,115 @@ B = B.ravel()
 #Applying optimization using linear programming
 res = linprog(c = Z, A_ub=A, b_ub=B, method='interior-point',options={"disp": True})
 #,"maxiter" : 5
+res_x_ip= res.x
+res_copy_ip = res
 
 import matplotlib.pyplot as plt
-plt.hist(np.array(1+res.x),bins=20)
+plt.hist(np.array(res_x_ip),bins=50)
+
+
+# post processing
+pd.DataFrame(res_x_ip).describe()
+
+plt.hist(res_x_ip, bins=100)
+plt.hist(res_x_ip[res_x_ip!=0], bins=100)
+plt.show()
+
+final_results = pd.DataFrame({'Itinerary': Itinerary[np.flip(np.argsort(res_copy.x),0)],'Demand_solution': res_copy.x[np.flip(np.argsort(res_copy.x),0)]})
+
+Itinerary = fare_data['Itinerary'].values
+Demand = demand_data['Demand'].values
+
+Possible_flight = []
+for k,v in flight_it_dict.items():
+    for i in Itinerary[np.flip(np.argsort(res_x_ip),0)]:
+        if k == i:
+            Possible_flight.append(v)
+            
+Final_results = pd.DataFrame({'Itinerary': Itinerary[np.flip(np.argsort(res_x_ip),0)],
+                                                        'Demand_solution': res_x_ip[np.flip(np.argsort(res_x_ip),0)],
+                                                        'Demand' : Demand[np.flip(np.argsort(res_x_ip),0)],
+                                                        'Possible flights' : Possible_flight})
+    
+Final_results["Demand_not_met"] = Final_results["Demand"] - Final_results["Demand_solution"]
+Final_results["Percentage_demand_met"] = 100 - ((Final_results["Demand"] - Final_results["Demand_solution"])/Final_results["Demand"]*100)
+
+
+Final_results.head()
+
+No_of_flights = []
+for index,row in Final_results.iterrows():
+    No_of_flights.append(len(row['Possible flights']))
+
+Final_results["No_of_flights"] = No_of_flights
+
+Final_results.isna()
+Final_results = Final_results.fillna(0)
+
+#Capacity
+list_itinerary = []
+for k,v in it_flight_dict.items():
+    list_itinerary.append(v)
+           
+Final_capacity = pd.DataFrame({'Flight': capacity_data.iloc[:,0],
+                                                        'Full_capacity': B[7949:],
+                                                        'Itinerary list' : list_itinerary ,
+                                                        'Estimated Demand" : 
+                                                        'Running_capacity' :np.dot(A[7949:,:],res_x_ip).round(5)})
+    
+Final_capacity["Utilization Rate"] = 100 - ((Final_capacity["Full_capacity"] - Final_capacity["Running_capacity"])/Final_capacity["Full_capacity"]*100)
+
+No_of_itinerary = []
+for index,row in Final_capacity.iterrows():
+    No_of_itinerary.append(len(row['Itinerary list']))
+
+Final_capacity["No_of_itinerary"] = No_of_itinerary
+
+#visualations
+actual_demand = demand_data.iloc[:,1].values
+type(actual_demand),type(res_x_ip)
+
+
+plt.figure(num=None, figsize=(16,12), dpi=120)
+plt.plot(np.arange(0,15,1),label="Full Demand met")
+plt.plot(np.arange(0,7.5,0.5),label="Half Demand met")
+plt.plot(np.arange(0,0.15,0.01),label="Zero Demand met")
+plt.scatter(actual_demand, res_x_ip)
+plt.legend()
+plt.title("Actual Demand vs Demand met")
+plt.xlabel('Demand')
+plt.ylabel('Demand Met')
+plt.show()
+
+Final_results[["Demand","Demand_solution"]].plot()
+
+Final_capacity.plot(kind="bar")
+Final_results.plot()
+
+Final_capacity.to_csv("flightCapacityResults.csv")
+Final_results.to_csv("ItineraryDemandResults.csv")
+
+plt.hist(Final_results.Percentage_demand_met,bins=3)
+plt.xlabel("Percentage")
+plt.ylabel("Frequency")
+plt.title("Percentage_demand_met")
+plt.show()
+
+Final_results["nof_pct"] = pd.cut(Final_results["Percentage_demand_met"],[-1,40,80,101],labels = ["low","medium","high"])
+
+table = pd.crosstab(Final_results["nof_bin"],Final_results["nof_pct"])
+
+flight_demand = []
+flight_demand_served = []
+for k,v in it_flight_dict.items():
+    temp_add2 = 0
+    temp_add = 0
+    for i in v:
+        temp_add2 = temp_add2 + float(Final_results.Demand_solution[Final_results.iloc[:,0]==i].values)
+        temp_add = temp_add + float(demand_data.Demand[demand_data.iloc[:,0].values ==i].values)
+    flight_demand.append(temp_add)
+    flight_demand_served.append(temp_add2)
+    
+Flight_demand_data = pd.DataFrame(list(zip(capacity_data.Flight,flight_demand,flight_demand_served)), columns = ["Flight","Demand_sum","Demand_served"])
+Flight_demand_data["Surplus demand"] = Flight_demand_data["Demand_sum"] - Flight_demand_data["Demand_served"]
+Flight_demand_data.to_csv("FlightDemandResults.csv")
